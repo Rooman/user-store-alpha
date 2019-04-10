@@ -1,9 +1,14 @@
 package com.anabol.userstore.dao.jdbc;
 
 import com.anabol.userstore.dao.UserDao;
+import com.anabol.userstore.dao.jdbc.mapper.UserRowMapper;
 import com.anabol.userstore.entity.User;
 import com.anabol.userstore.dao.jdbc.mapper.Mapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -14,51 +19,50 @@ public class JdbcUserDao implements UserDao {
 
     private static final String FIND_ALL_QUERY = "SELECT id, firstName, lastName, salary, dateOfBirth FROM user";
     private static final String FIND_BY_ID_QUERY = "SELECT id, firstName, lastName, salary, dateOfBirth FROM user WHERE id = ?";
-    private static final String INSERT_QUERY = "INSERT INTO user (firstName, lastName, salary, dateOfBirth) VALUES (?, ?, ?, ?)";
+    private static final String INSERT_QUERY = "INSERT INTO user " +
+            "(firstName, lastName, salary, dateOfBirth) " +
+            "VALUES (:firstName, :lastName, :salary, :dateOfBirth)";
     private static final String DELETE_BY_ID_QUERY = "DELETE FROM user WHERE id = ?";
     private static final String UPDATE_QUERY = "UPDATE user SET firstName = ?, lastName = ?, salary = ?, dateOfBirth = ? WHERE id = ?";
 
+    @Autowired
     private DataSource dataSource;
 
-    public JdbcUserDao(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     @Override
     public List<User> findAll() {
-        try (Connection connection = dataSource.getConnection();
-             Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(FIND_ALL_QUERY)) {
-            return Mapper.parseList(resultSet);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            throw new RuntimeException("We got SQLException", e);
-        }
+        return jdbcTemplate.query(FIND_ALL_QUERY, new UserRowMapper());
     }
+
+//    @Override
+//    public User findById(int id) {
+//        try (Connection connection = dataSource.getConnection();
+//             PreparedStatement preparedStatement = connection.prepareStatement(FIND_BY_ID_QUERY)) {
+//            preparedStatement.setInt(1, id);
+//            ResultSet resultSet = preparedStatement.executeQuery();
+//            return Mapper.parse(resultSet);
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+//            throw new RuntimeException("We got SQLException", e);
+//        }
+//    }
 
     @Override
     public User findById(int id) {
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(FIND_BY_ID_QUERY)) {
-            preparedStatement.setInt(1, id);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            return Mapper.parse(resultSet);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            throw new RuntimeException("We got SQLException", e);
-        }
+        return jdbcTemplate.queryForObject(FIND_BY_ID_QUERY, new UserRowMapper(), id);
     }
 
     @Override
     public void insert(User user) {
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(INSERT_QUERY)) {
-            setStatementAttributes(preparedStatement, user);
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            throw new RuntimeException("We got SQLException", e);
-        }
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("firstName", user.getFirstName());
+        params.addValue("dateOfBirth", user.getDateOfBirth());
+        namedParameterJdbcTemplate.update(INSERT_QUERY, params);
     }
 
     @Override
@@ -85,7 +89,7 @@ public class JdbcUserDao implements UserDao {
             throw new RuntimeException("We got SQLException", e);
         }
     }
-    
+
 
     private void setStatementAttributes(PreparedStatement preparedStatement, User user) throws SQLException {
         preparedStatement.setString(1, user.getFirstName());
