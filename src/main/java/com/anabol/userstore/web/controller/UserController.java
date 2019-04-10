@@ -4,7 +4,11 @@ import com.anabol.userstore.entity.User;
 import com.anabol.userstore.service.UserService;
 import com.anabol.userstore.web.templater.PageGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
@@ -17,15 +21,13 @@ import java.util.Map;
 public class UserController {
 
     @Autowired
+    @Qualifier("cachedUserService")
     private UserService userService;
 
     @RequestMapping(method = RequestMethod.GET, path = "/users")
-    public void getUsers(HttpServletResponse response) throws IOException {
-        Map<String, Object> pageVariables = new HashMap<>();
-        pageVariables.put("users", userService.findAll());
-        response.getWriter().println(PageGenerator.instance().getPage("users.html", pageVariables));
-        response.setContentType("text/html;charset=utf-8");
-        response.setStatus(HttpServletResponse.SC_OK);
+    public String getUsers(ModelMap modelMap) {
+        modelMap.addAttribute("users", userService.findAll());
+        return "users";
     }
 
     @GetMapping("/users/add")
@@ -38,7 +40,12 @@ public class UserController {
     @PostMapping("/users/add")
     public String addUser(@RequestParam String firstName,
                           @RequestParam String lastName,
-                          @RequestParam double salary) {
+                          @RequestParam double salary,
+                          @RequestParam
+                              @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateOfBirth,
+                          @ModelAttribute User userFromForm) {
+
+        System.out.println(dateOfBirth);
 
         User user = new User();
         user.setFirstName(firstName);
@@ -46,12 +53,12 @@ public class UserController {
         user.setSalary(salary);
         user.setDateOfBirth(LocalDate.now());
 
-        userService.insert(user);
+        userService.insert(userFromForm);
 
-        return "redirect:/users";
+        return "redirect:/web/users";
     }
 
-    @GetMapping("/users/edit/{id}")
+    @GetMapping(value = "/users/edit/{id}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ResponseBody
     public String editUser(@PathVariable int id) {
 

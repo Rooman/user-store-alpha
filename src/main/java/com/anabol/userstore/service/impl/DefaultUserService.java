@@ -6,7 +6,7 @@ import com.anabol.userstore.service.UserService;
 
 import java.util.List;
 
-public class DefaultUserService implements UserService{
+public class DefaultUserService implements UserService {
     private UserDao userDao;
 
     @Override

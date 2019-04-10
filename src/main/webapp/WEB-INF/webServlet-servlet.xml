@@ -15,10 +15,29 @@
 
     <mvc:annotation-driven/>
 
+    <!-- freemarker config -->
+    <bean id="freemarkerConfig" class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer">
+        <property name="templateLoaderPath" value="classpath:/templates"/>
+    </bean>
+
+    <bean class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
+        <property name="prefix" value=""/>
+        <property name="suffix" value=".html"/>
+    </bean>
+
     <bean id="userService" class="com.anabol.userstore.service.impl.DefaultUserService">
         <property name="userDao" ref="userDao"/>
     </bean>
 
-    <bean id="userDao" class="com.anabol.userstore.dao.jdbc.JdbcUserDao"/>
+    <bean id="cachedUserService" class="com.anabol.userstore.service.impl.DefaultUserService">
+        <property name="userDao" ref="userDao"/>
+    </bean>
 
+    <bean id="userDao" class="com.anabol.userstore.dao.jdbc.JdbcUserDao">
+       <constructor-arg ref="dataSource"/>
+    </bean>
+
+    <bean id="dataSource" class="org.sqlite.SQLiteDataSource">
+        <property name="url" value="jdbc:sqlite:test.db"/>
+    </bean>
 </beans>
