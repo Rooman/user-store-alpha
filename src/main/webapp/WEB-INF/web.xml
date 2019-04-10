@@ -1,0 +1,12 @@
+<web-app>
+    <servlet>
+        <servlet-name>webServlet</servlet-name>
+        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>webServlet</servlet-name>
+        <url-pattern>/web/*</url-pattern>
+    </servlet-mapping>
+</web-app>
